@@ -1,0 +1,11 @@
+name: Containerized Train CI/CD
+run-name: Train CI/CD
+on: [push]
+jobs:
+  BuildDockerImage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Docker Build
+        run: docker build -t "mbouzayeni/train-schedule:$GITHUB_SHA" .

@@ -1,0 +1,60 @@
+name: Containerized Train CI/CD
+run-name: Train CI/CD
+on: [push]
+jobs:
+  BuildDockerImage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Docker Build
+        run: docker build -t "mbouzayeni/train-schedule:$GITHUB_SHA" .
+      - name: Save the image to a tar file
+        run: docker save mbouzayeni/train-schedule:$GITHUB_SHA > train-schedule.tar.gz
+      - name: Save artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: train-schedule.tar.gz
+          path: ./train-schedule.tar.gz
+  PushDockerImage:
+    runs-on: ubuntu-latest
+    needs: BuildDockerImage
+    steps:
+      - name: Downlaod artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: train-schedule.tar.gz
+      - name: Load Docker Image
+        run: docker load --input train-schedule.tar.gz
+      - name: Login to docker hub
+        run: docker login --username ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_PASSWORD }}
+      - name: Push Docker Image
+        run: docker push mbouzayeni/train-schedule:$GITHUB_SHA            
+  DeployToProduction:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    environment: production
+    needs: PushDockerImage
+    steps:
+      - name: Connect to SSH and Login to docker hub
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          script: docker login --username ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_PASSWORD }}
+      - name: Pull the image
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          script: docker pull mbouzayeni/train-schedule:$GITHUB_SHA
+      - name: Run the new container
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          # script: docker stop train-schedule && docker rm train-schedule && docker run --restart always --name train-schedule -p 8080:8080 -d mbouzayeni/train-schedule:$GITHUB_SHA   
+          script: docker run --restart always --name train-schedule -p 8080:8080 -d mbouzayeni/train-schedule:$GITHUB_SHA

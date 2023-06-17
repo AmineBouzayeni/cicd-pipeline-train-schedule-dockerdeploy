@@ -62,3 +62,4 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           # script: docker stop train-schedule && docker rm train-schedule && docker run --restart always --name train-schedule -p 8080:8080 -d mbouzayeni/train-schedule:$GITHUB_SHA   
           script: sudo docker run --restart always --name train-schedule -p 8080:8080 -d mbouzayeni/train-schedule:$SHA
+

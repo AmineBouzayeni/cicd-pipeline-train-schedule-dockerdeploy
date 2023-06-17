@@ -46,7 +46,7 @@ jobs:
       - name: Pull the image
         uses: appleboy/ssh-action@v0.1.10
         env:
-          SHA: $GITHUB_SHA
+          SHA: ${{ github.sha }}
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
@@ -55,11 +55,10 @@ jobs:
       - name: Run the new container
         uses: appleboy/ssh-action@v0.1.10
         env:
-          SHA: $GITHUB_SHA
+          SHA: ${{ github.sha }}
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           # script: docker stop train-schedule && docker rm train-schedule && docker run --restart always --name train-schedule -p 8080:8080 -d mbouzayeni/train-schedule:$GITHUB_SHA   
           script: sudo docker run --restart always --name train-schedule -p 8080:8080 -d mbouzayeni/train-schedule:$SHA
-
